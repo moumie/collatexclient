@@ -22,6 +22,7 @@
             var character= $('#latex').val();
             //send character to server
             socket.emit('client_character',{buffer:character});
+            
         });
     });  
     </script>
