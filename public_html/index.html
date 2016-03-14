@@ -8,8 +8,8 @@
  </head>
 
 <body>
-
-    <textarea id="latex">Your latex goes here</textarea>
+    <p><span id="useronline">0</span> users online</p><br/>
+    <textarea id="latex">Your latex goes here</textarea><br/>
     
     <script>
     $(document).ready(function () {
@@ -23,8 +23,12 @@
             //send character to server
             socket.emit('client_character',{buffer:character});
         });
+        
+        socket.on('user_online',function(userOnline){
+            document.getElementById('useronline').innerHTML=userOnline;
+        });
     });  
     </script>
-
+   
 </body>
 </html>
