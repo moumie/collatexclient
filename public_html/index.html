@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8"/>
     <title>Client</title>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> 
     <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script> 
@@ -10,22 +11,70 @@
 <body>
     <p><span id="useronline">0</span> users online</p><br/>
     <textarea id="latex">Your latex goes here</textarea><br/>
-    
+    <form action="demo_form.asp" method="get">
+        <br>
+        <button id ="save" type="button" value="Save">Save</button>
+        <button id="convert" type="button" value="Convert">Convert</button>
+    </form>
     <script>
-    $(document).ready(function () {
+    $(function () {
      //you can ask socket.io's client to notify the server about disconnect by turning on the sync disconnect on unload flag
-        var socket = io.connect('http://localhost:3000' ); 
-        //receive character from server
-        socket.on('server_character',function(content){ document.getElementById('latex').innerHTML=content; });
-        //On Keydown
-        $('#latex').on('keydown',function(){
-            var character= $('#latex').val();
-            //send character to server
-            socket.emit('client_character',{buffer:character});
-        });
+        var socket = io.connect('http://localhost:3000',
+                         {'sync disconnect on unload':false} ); 
+         
         
+        //get session id         
+        var sessionid;
+        var room = "abc123";
+        
+        socket.on('connect', function() {
+        sessionid = socket.io.engine.id;
+        socket.emit('room', room);
+        
+        console.log('ddd:'+ sessionid + 'room = '+room);
+        });
+       
+        //receive character from server
+        socket.on('server_character',function(content){
+            //console.log('From Server:'+ content);
+            document.getElementById('latex').innerHTML=content; 
+            //$(latex).append(content);
+        });
+        //On Keydown
+        $('#latex').on('keypress',function(){
+            var character= $('#latex').val();
+            //send character to servers
+            socket.emit('client_character',{buffer:character},sessionid);
+            console.log('To Server:'+ {buffer:character} +"---"+sessionid);
+
+        });
+       
+        
+        //Saving the textarea content.
+        $( "#save" ).click(function() {
+            var doc= $('#latex').val();
+            //document
+            var document = {     
+            name: "doc1",
+            content: doc
+            };
+            socket.emit('client_doc' ,document ,sessionid);
+         });
+         
+         //Converting the textarea content.
+         $( "#convert" ).click(function() {
+             var documentName="doc1.tex";
+             socket.emit('client_convert' ,documentName ,sessionid);
+         });
+         
+         //get online users
         socket.on('user_online',function(userOnline){
             document.getElementById('useronline').innerHTML=userOnline;
+        });
+        
+        //get pdf url
+        socket.on('server_pdf',function(pdfDocument){
+           console.log("Url : "+pdfDocument.url);
         });
     });  
     </script>
