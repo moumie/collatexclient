@@ -9,6 +9,7 @@
  </head>
 
 <body>
+    <p><span id="userrooms">0</span>   rooms</p>
     <p><span id="useronline">0</span> users online</p>
     <p><span id="useronlinelist">0</span> list of users online</p>
     <p><span id="loginid">0</span> is the current user ID</p>
@@ -33,38 +34,57 @@
         <br><br>
         <button id="logout" type="button" value="logout">Logout</button>
         <input id="useridinlist" type="text" value="User ID"/>
+        <br><br>
+        <button id="unsuscribe" type="button" value="Unsuscribe">Unsuscribe</button>
+        <!-- <input id="unsuscribe" type="text" value="Room Id"/> -->
+        <br><br>
+        <button id="getdocconent" type="button" value="Get document Content">Doc path</button>
+        <input id="docpath" type="text" value="Document Path"/>
     </form>
     <script>
     $(function () {
      //you can ask socket.io's client to notify the server about disconnect by turning on the sync disconnect on unload flag
         var socket = io.connect('http://localhost:3000',
                          {'sync disconnect on unload':false} ); 
-         
-        
         //get session id         
-        var sessionid;
-        var room = "abc123";
+        var room;
+       //Get desired room
+        var room=prompt("Please enter your room",'');
         
         socket.on('connect', function() {
-        sessionid = socket.io.engine.id;
-        socket.emit('room', room);
         
-        console.log('ddd:'+ sessionid + 'room = '+room);
+        socket.emit('subscribe', room);
+        console.log('Room = '+room);
+        });
+        
+       //receive server_roomlist from server
+        socket.on('server_roomlist',function(content){
+            //console.log('From Server:'+ content);
+            document.getElementById('userrooms').innerHTML=JSON.stringify(content); 
+            //$(latex).append(content);
+        });
+        
+        //receive document content from server
+        socket.on('server_getDocContent',function(content){
+            console.log('From Server:'+ content);
+            document.getElementById('latex').innerHTML=content; 
+            //$(latex).append(content);
         });
        
-        //receive character from server
+        //receive characters from server
         socket.on('server_character',function(content){
             //console.log('From Server:'+ content);
             document.getElementById('latex').innerHTML=content; 
             //$(latex).append(content);
         });
-        //On Keydown
+        //On Keypress
         $('#latex').on('keypress',function(){
             var character= $('#latex').val();
+            console.log('To Server:'+ character);
             //send character to servers
-            socket.emit('client_character',{buffer:character},sessionid);
-            console.log('To Server:'+ {buffer:character} +"---"+sessionid);
-
+            socket.emit('client_character',{buffer:character},room);
+            console.log('To Server:'+ {buffer:character} +"---"+room);
+           
         });
        
         
@@ -77,20 +97,32 @@
             content: doc,
             owner:'5704c1c4e559001405ae7bd5',
             };
-            socket.emit('client_doc' ,document ,sessionid);
-         });
+            socket.emit('client_doc' ,document ,room);
+        });
          
-         //Converting the textarea content.
-         $( "#convert" ).click(function() {
+         //Set returned content in the textarea.
+        $( "#getdocconent" ).click(function() {
+             var path= $('#docpath').val();
+             socket.emit('client_getDocContent' ,path ,room);
+        });
+         
+        //Converting the textarea content.
+        $( "#convert" ).click(function() {
              var documentName="doc3.tex";
-             socket.emit('client_convert' ,documentName ,sessionid);
-         });
+             socket.emit('client_convert' ,documentName ,room);
+        });
          
-         //User logout.
-         $( "#logout" ).click(function() {
+        //User logout.
+        $( "#logout" ).click(function() {
             var logid= $('#useridinlist').val();
-             socket.emit('client_logout' ,logid ,sessionid);
-         });
+             socket.emit('client_logout' ,logid ,room);
+        });
+        
+         //User unsuscribe from a room.
+        $( "#unsuscribe" ).click(function() {
+            //var logid= $('#useridinlist').val();
+             socket.emit('unsubscribe' ,room ,room);
+        });
          
           //User login.
         $( "#login" ).click(function() {
@@ -102,8 +134,8 @@
             userEmail: email,
             userPassword: password
             };
-            socket.emit('client_login' ,user ,sessionid);
-         });
+            socket.emit('client_login' ,user ,room);
+        });
          
          //Register New User.
         $( "#register" ).click(function() {
@@ -115,25 +147,25 @@
             userEmail: email,
             userPassword: password
             };
-            socket.emit('client_register' ,user ,sessionid);
-         });
+            socket.emit('client_register' ,user ,room);
+        });
          
         //Get user documents.
-         $( "#getdocs" ).click(function() {
+        $( "#getdocs" ).click(function() {
              //var userpid="5704c1c4e559001405ae7bd5";
              var userpid = $('#docs').val();
-             socket.emit('client_getdocs' ,userpid ,sessionid);
-         });
+             socket.emit('client_getdocs' ,userpid ,room);
+        });
          
-         //get newly registered user credentials
-            socket.on('server_getdocs',function(docs){
-                document.getElementById('userdocs').innerHTML=JSON.stringify(docs);
-            });
+        //get list of user docs
+        socket.on('server_getdocs',function(docs){
+            document.getElementById('userdocs').innerHTML=JSON.stringify(docs);
+        });
          
-         //get list of users online
-            socket.on('server_useronlinelist',function(users){
-                document.getElementById('useronlinelist').innerHTML=JSON.stringify(users);
-            });
+        //get list of users online
+        socket.on('server_useronlinelist',function(users){
+            document.getElementById('useronlinelist').innerHTML=JSON.stringify(users);
+        });
          
         //get newly registered user credentials
         socket.on('server_registration',function(userId){
