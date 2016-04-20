@@ -115,7 +115,7 @@
         $( "#convert" ).click(function() {
              var userid = "5704c1c4e559001405ae7bd5";
              var documentName=$('#docname').val();
-             var docname= userid+"_"+documentName;
+             var docname= userid+"_"+documentName+".tex";
              socket.emit('client_convert' ,docname ,room);
         });
          
